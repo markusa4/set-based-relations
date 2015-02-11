@@ -7,8 +7,6 @@
 --                                                                                 --
 -- Author: Markus Anders                                                           --
 --                                                                                 --
--- TODO:                                                                           --
--- - More functions (creation methods, etc.)                                       --
 -- - Add proper tests, examples                                                    --
 -- - Be able to output relations in a graphically pleasing way                     -- 
 -- - Extend the project to provide basic algebraic structures                      --
@@ -17,7 +15,8 @@
 
 module Relation (Relation, faculty, binomialCoefficient, cartesicProduct, isOneToOne,
                  isOnto, image, inverseImage, fromFunction, isReflexive, isFunction,
-                 isSymmetric, isAntiSymmetric, isTransitive, isBijective, stirling) 
+                 isSymmetric, isAntiSymmetric, isTransitive, isBijective, stirling,
+                 apply, powerset, allOnto, allOneToOne, allBijective) 
 where
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -39,6 +38,21 @@ stirling 0 0 = 1
 stirling n 0 = 0
 stirling 0 m = 0
 stirling n m = (stirling (n - 1) (m - 1)) + m * (stirling (n - 1) m)
+
+-- Power Set ------------------------------------------------------------------------
+powerset :: Ord a => Set a -> Set (Set a)
+powerset s = if(Set.null s) then Set.insert Set.empty Set.empty else
+             let e = Set.findMin   s 
+                 r = Set.deleteMin s 
+                 p = powerset r
+             in Set.union (insertIntoSets e p) (p)
+
+-- Helper function
+insertIntoSets :: Ord a => a -> Set (Set a) -> Set (Set a)
+insertIntoSets a s = if Set.null s then Set.empty else 
+                     let e = Set.findMin   s 
+                         r = Set.deleteMin s 
+                     in  Set.insert (Set.insert a e) (insertIntoSets a r)
 
 -- Onto and 1-1 checks --------------------------------------------------------------
 isOneToOne :: Eq b => Set (a, b) -> Bool
@@ -122,12 +136,12 @@ apply g x = let f = Set.filter (\(c, d) -> x == c) g
 numFunctions :: Set a -> Set b -> Int
 numFunctions m1 m2 = (Set.size m2)^(Set.size m1) 
 
-numFunctionsOnto :: Set a -> Set b -> Int
-numFunctionsOnto m1 m2 = productOnto (Set.size m1) (Set.size m2) 0
-
 numFunctionsOneToOne :: Set a -> Set b -> Int
-numFunctionsOneToOne m1 m2 = (faculty (Set.size m2)) * 
-                             (stirling (Set.size m1) (Set.size m2))
+numFunctionsOneToOne m1 m2 = productOnto (Set.size m1) (Set.size m2) 0
+
+numFunctionsOnto :: Set a -> Set b -> Int
+numFunctionsOnto m1 m2 = (faculty (Set.size m2)) * 
+                         (stirling (Set.size m1) (Set.size m2))
 
 numFunctionsBijective :: Set a -> Set b -> Int
 numFunctionsBijective m1 m2 = faculty (Set.size m2)
@@ -144,33 +158,57 @@ fromFunction m f = if(Set.null m) then Set.empty else
 
 cartesicProduct :: Ord a => Ord b => Set a -> Set b -> Set (a, b)
 cartesicProduct m1 m2 = if Set.null m1 then Set.empty
-                         else Set.union (combinedSet     (Set.findMin m1)   m2) 
-                                        (cartesicProduct (Set.deleteMin m1) m2)
+                        else Set.union (combinedSet     (Set.findMin m1)   m2) 
+                                       (cartesicProduct (Set.deleteMin m1) m2)
+
+allOnto :: Ord a => Ord b => Set a -> Set b -> Set (Set (a, b))
+allOnto s1 s2 = Set.filter (\x -> (isFunction x) && (isOnto x s2) 
+                && ((Set.difference s1 (inverseImage x)) == Set.empty)) 
+                (powerset (cartesicProduct s1 s2))
+
+allOneToOne :: Ord a => Ord b => Set a -> Set b -> Set (Set (a, b))
+allOneToOne s1 s2 = Set.filter (\x -> (isFunction x) && (isOneToOne x)
+                    && ((Set.difference s1 (inverseImage x)) == Set.empty))
+                    (powerset (cartesicProduct s1 s2))
+
+allBijective :: Ord a => Ord b => Set a -> Set b -> Set (Set (a, b))
+allBijective s1 s2 = Set.filter (\x -> (isFunction x) && (isBijective x s2)
+                     && ((Set.difference s1 (inverseImage x)) == Set.empty))
+                     (powerset (cartesicProduct s1 s2))
 
 -- Helper function
 combinedSet :: Ord a => Ord b => a -> Set b -> Set (a, b)
 combinedSet a m2 = if Set.null m2 then Set.empty 
-                       else Set.union (Set.singleton   (a,(Set.findMin m2))) 
-                                      (combinedSet      a (Set.deleteMin m2))
+                   else Set.union (Set.singleton   (a,(Set.findMin m2))) 
+                                  (combinedSet      a (Set.deleteMin m2))
 
 -- Testing --------------------------------------------------------------------------
 testSet1 :: Set Integer
-testSet1 = Set.fromAscList [-4, -3, -2, -1, 0, 1, 2, 3, 4]
+testSet1 = Set.fromList [-4, -3, -2, -1, 0, 1, 2, 3, 4]
 
 testSet2 :: Set Char
-testSet2 = Set.fromAscList "abcdefg"
+testSet2 = Set.fromList "abcdefg"
 
 testSet3 :: Set Integer
-testSet3 = Set.fromAscList [0, 1, 2, 3]
+testSet3 = Set.fromList [0, 1, 2, 3]
 
 testSet4 :: Set Integer
-testSet4 = Set.fromAscList [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
+testSet4 = Set.fromList [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 
 testSet5 :: Set (Integer, Integer)
 testSet5 = Set.fromList [(0,1), (1,2), (0,2)]
 
 testSet6 :: Relation Integer Integer
 testSet6 = testSet5
+
+testSet7 :: Set (Set Integer)
+testSet7 = Set.insert testSet4 (Set.insert testSet3 Set.empty)
+
+testSet8 :: Set (Set Integer)
+testSet8 = insertIntoSets 20 testSet7
+
+testSet9 :: Set (Set Integer)
+testSet9 = powerset testSet3
 
 testRelation :: Set (Integer, Char)
 testRelation = cartesicProduct testSet1 testSet2
