@@ -8,6 +8,7 @@
 -- Author: Markus Anders                                                           --
 --                                                                                 --
 -- - Add proper tests, examples                                                    --
+-- - Replace allOnto, allOneToOne, allBijective with smarter implementations       --
 -- - Be able to output relations in a graphically pleasing way                     -- 
 -- - Extend the project to provide basic algebraic structures                      --
 --                                                                                 --
@@ -16,7 +17,8 @@
 module Relation (Relation, faculty, binomialCoefficient, cartesicProduct, isOneToOne,
                  isOnto, image, inverseImage, fromFunction, isReflexive, isFunction,
                  isSymmetric, isAntiSymmetric, isTransitive, isBijective, stirling,
-                 apply, powerset, allOnto, allOneToOne, allBijective) 
+                 apply, powerset, allOnto, allOneToOne, allBijective, numFunctions,
+                 numFunctionsOnto, numFunctionsOneToOne, numFunctionsBijective)
 where
 import Data.Set (Set)
 import qualified Data.Set as Set
@@ -181,6 +183,15 @@ combinedSet :: Ord a => Ord b => a -> Set b -> Set (a, b)
 combinedSet a m2 = if Set.null m2 then Set.empty 
                    else Set.union (Set.singleton   (a,(Set.findMin m2))) 
                                   (combinedSet      a (Set.deleteMin m2))
+
+-- Composition, Transitive Closure --------------------------------------------------
+-- TODO: compose :: Set (a, b) -> Set(b, c) -> Set (a, c)
+compose :: Set (a, b) -> Set (b, c) -> Set (a, c)
+compose r1 r2 = undefined 
+
+-- TODO: transitiveClosure :: Set (a, a) -> Set (a, a)
+transitiveClosure :: Set (a, a) -> Set (a, a)
+transitiveClosure s = undefined
 
 -- Testing --------------------------------------------------------------------------
 testSet1 :: Set Integer
